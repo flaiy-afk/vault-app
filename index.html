@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f"><meta name="description" content="Pengelola keuangan pribadi dan penyaring peluang crypto.">
+<link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
+<title>Vault — Finance & Market Screener</title>
+</head>
+<body>
+<header class="top"><div><div class="eyebrow">PERSONAL FINANCE SYSTEM</div><h1>VAULT<span>.</span></h1></div><div class="local-pill">● LOCAL MODE</div></header>
+<nav class="tabs">
+<button class="tab active" data-page="dashboard">Ringkasan</button><button class="tab" data-page="income">Pemasukan</button><button class="tab" data-page="expense">Pengeluaran</button><button class="tab" data-page="screener">Crypto Scanner</button><button class="tab" data-page="portfolio">Portofolio</button><button class="tab" data-page="history">Riwayat</button>
+</nav>
+<main>
+<section id="dashboard" class="page active">
+<div class="welcome"><div><p class="eyebrow">FINANCIAL OVERVIEW</p><h2>Keuanganmu, <span>terkendali.</span></h2><p class="muted">Catat uang masuk dan keluar. Saldo dihitung dari catatan aplikasi.</p></div><div class="date" id="today"></div></div>
+<div class="cards">
+<article class="metric"><span>Total dana tercatat</span><strong id="totalBalance">Rp0</strong><small>Operasional + darurat + uang dingin</small></article>
+<article class="metric"><span>Uang dingin</span><strong id="coldBalance">Rp0</strong><small>Alokasi investasi (catatan manual)</small></article>
+<article class="metric"><span>Dana darurat</span><strong id="emergencyBalance">Rp0</strong><small>Cadangan keuangan</small></article>
+</div>
+<div class="panel"><div class="panel-head"><div><p class="eyebrow">ALLOCATION</p><h3>Komposisi dana</h3></div><button class="ghost" id="editRatio">Atur rasio</button></div>
+<div class="bar"><i id="barOps"></i><i id="barEmergency"></i><i id="barCold"></i></div>
+<div class="legend"><span>● Operasional <b id="ratioOps">60%</b></span><span>● Darurat <b id="ratioEmergency">20%</b></span><span>● Uang dingin <b id="ratioCold">20%</b></span></div>
+</div>
+<div class="quick"><button class="primary" data-goto="income">＋ Catat pemasukan</button><button class="secondary" data-goto="expense">－ Catat pengeluaran</button></div>
+<div class="panel"><div class="panel-head"><h3>Aktivitas terbaru</h3><button class="ghost" data-goto="history">Lihat semua</button></div><div id="recent" class="rows empty">Belum ada transaksi.</div></div>
+<p class="footnote">Catatan: saldo di aplikasi adalah pembukuan internal, bukan saldo rekening atau exchange.</p>
+</section>
+
+<section id="income" class="page">
+<div class="section-title"><p class="eyebrow">CASH FLOW / IN</p><h2>Catat pemasukan</h2><p class="muted">Nominal bebas, tanpa target bulanan.</p></div>
+<div class="panel form-panel"><label>Nominal diterima (Rp)</label><input id="incomeAmount" type="number" min="1" inputmode="numeric" placeholder="Contoh: 100000">
+<div class="quick-amounts"><button data-amount="20000">20rb</button><button data-amount="50000">50rb</button><button data-amount="100000">100rb</button><button data-amount="200000">200rb</button></div>
+<label>Catatan (opsional)</label><input id="incomeNote" maxlength="70" placeholder="Uang jajan, hadiah, freelance...">
+<div class="split-preview"><div><span>Operasional</span><b id="previewOps">Rp0</b></div><div><span>Dana darurat</span><b id="previewEmergency">Rp0</b></div><div><span>Uang dingin</span><b id="previewCold">Rp0</b></div></div>
+<button class="primary full" id="saveIncome">Simpan pemasukan</button></div>
+</section>
+
+<section id="expense" class="page">
+<div class="section-title"><p class="eyebrow">CASH FLOW / OUT</p><h2>Catat pengeluaran</h2><p class="muted">Pilih scan struk atau isi manual. Periksa data sebelum disimpan.</p></div>
+<div class="mode-switch"><button class="mode-btn active" id="manualMode">✎ Input manual</button><button class="mode-btn" id="scanMode">▣ Scan struk</button></div>
+<div id="manualExpensePanel" class="panel form-panel"><label>Nominal pengeluaran sebenarnya (Rp)</label><input id="expenseAmount" type="number" min="1" inputmode="numeric" placeholder="Contoh: 17000">
+<label>Kategori</label><select id="expenseCategory"><option>Makan & minum</option><option>Transportasi / bensin</option><option>Jajan</option><option>Tagihan</option><option>Belanja</option><option>Lainnya</option></select>
+<label>Catatan (opsional)</label><input id="expenseNote" maxlength="100" placeholder="Keterangan transaksi">
+<div class="toggle-row"><div><b>Aktifkan pembulatan</b><small>Selisih pembulatan dialihkan ke uang dingin</small></div><input id="roundEnabled" type="checkbox" checked></div>
+<label>Kelipatan pembulatan</label><select id="roundUnit"><option value="1000">Rp1.000</option><option value="5000" selected>Rp5.000</option><option value="10000">Rp10.000</option></select>
+<div class="split-preview"><div><span>Dipotong dari operasional</span><b id="expenseDebit">Rp0</b></div><div><span>Disapu ke uang dingin</span><b id="roundValue">Rp0</b></div></div>
+<button class="primary full" id="saveExpense">Simpan pengeluaran</button></div>
+<div id="scanExpensePanel" class="panel form-panel" hidden>
+ <label>Foto struk belanja</label><input id="receiptImage" type="file" accept="image/*" capture="environment">
+ <p class="tiny muted">Foto hanya dipakai untuk membaca teks. VAULT tidak menyimpan foto ke riwayat.</p>
+ <button class="primary full" id="scanReceipt">📷 Baca struk</button><p id="ocrStatus" class="tiny muted" aria-live="polite">Pilih foto struk yang jelas dan tidak buram.</p>
+ <div id="receiptReview" hidden>
+  <div class="review-heading"><h3>Periksa hasil pembacaan</h3><span class="tag warn">Perlu verifikasi</span></div>
+  <label>Nama toko</label><input id="receiptStore" maxlength="80" placeholder="Nama toko">
+  <div class="two"><div><label>Tanggal transaksi</label><input id="receiptDate" type="date"></div><div><label>Kategori</label><select id="receiptCategory"><option>Belanja</option><option>Makan & minum</option><option>Transportasi / bensin</option><option>Jajan</option><option>Tagihan</option><option>Lainnya</option></select></div></div>
+  <div class="panel-head item-head"><h3>Rincian barang</h3><button class="ghost" id="addReceiptItem">＋ Tambah barang</button></div>
+  <div id="receiptItems" class="receipt-items"></div>
+  <label>Total transaksi (Rp) — bisa diedit</label><input id="receiptTotal" type="number" min="1" inputmode="numeric">
+  <label>Catatan (opsional)</label><input id="receiptNote" maxlength="100" placeholder="Catatan tambahan">
+  <div class="toggle-row"><div><b>Aktifkan pembulatan</b><small>Selisih pembulatan masuk ke uang dingin</small></div><input id="receiptRoundEnabled" type="checkbox" checked></div>
+  <label>Kelipatan pembulatan</label><select id="receiptRoundUnit"><option value="1000">Rp1.000</option><option value="5000" selected>Rp5.000</option><option value="10000">Rp10.000</option></select>
+  <div class="split-preview"><div><span>Dipotong dari operasional</span><b id="receiptDebit">Rp0</b></div><div><span>Disapu ke uang dingin</span><b id="receiptRound">Rp0</b></div></div>
+  <button class="primary full" id="saveReceiptExpense">Simpan ke riwayat</button>
+ </div>
+</div>
+</section>
+
+<section id="screener" class="page">
+<div class="section-title"><p class="eyebrow">MARKET INTELLIGENCE</p><h2>On-demand screener</h2><p class="muted">Mode Balanced: RSI + Support + Volume + EMA20. Analisis hanya berjalan saat tombol ditekan; tanpa API key dan tanpa eksekusi order.</p></div>
+<div class="panel form-panel">
+<label for="pairSymbol">Cari pair Indodax</label><input id="pairSymbol" type="text" autocapitalize="characters" spellcheck="false" placeholder="Contoh: BTCIDR" value="BTCIDR">
+<div class="two"><div><label>Timeframe</label><select id="timeframe"><option value="1h" selected>1 Jam</option><option value="4h">4 Jam</option><option value="15m">15 Menit</option><option value="1d">1 Hari</option></select></div><div><label>Batas RSI</label><input id="rsiLimit" type="number" min="10" max="50" value="35"></div></div>
+<div class="balance-hint">Uang dingin tersedia <b id="scannerColdBalance">Rp0</b></div>
+<button class="primary full" id="runScreener">⚡ Analisis pair</button><p class="tiny muted" id="apiStatus">Belum ada analisis.</p>
+</div>
+<div id="screenResults" class="results"></div>
+<div class="footnote">Masukkan satu pair IDR, misalnya BTCIDR atau ETHIDR. VAULT hanya menganalisis pair yang kamu pilih.</div>
+<p class="footnote">RSI dan support adalah indikator bantu, bukan kepastian harga akan naik. Periksa spread, likuiditas, tren timeframe lebih tinggi, dan risiko sebelum mengambil keputusan.</p>
+</section>
+
+<section id="portfolio" class="page">
+<div class="section-title"><p class="eyebrow">INVESTMENT LEDGER</p><h2>Portofolio aktif</h2><p class="muted">Catatan pembelian manual. VAULT tidak mengirim order ke Indodax.</p></div>
+<div class="panel"><div class="panel-head"><h3>Saldo Uang Dingin</h3><b id="portfolioColdBalance">Rp0</b></div><div id="portfolioRows" class="rows empty">Belum ada posisi aktif.</div></div>
+</section>
+<section id="history" class="page">
+<div class="section-title"><p class="eyebrow">LEDGER</p><h2>Riwayat transaksi</h2><p class="muted">Data tersimpan di browser HP ini.</p></div>
+<div class="panel"><div class="panel-head"><h3>Semua aktivitas</h3><button class="ghost danger" id="exportData">Ekspor JSON</button></div><div id="historyRows" class="rows empty">Belum ada transaksi.</div></div>
+<div class="panel danger-panel"><h3>Pengelolaan data</h3><p class="muted">Hapus data akan menghapus seluruh catatan keuangan dari browser ini.</p><button class="secondary danger" id="resetData">Hapus seluruh data</button></div>
+</section>
+</main>
+<div id="toast" class="toast"></div>
+<dialog id="entryDialog"><form method="dialog" class="dialog-content"><div class="panel-head"><h3 id="entryTitle">Konfirmasi entry</h3><button class="x" value="cancel">×</button></div><p class="muted" id="entryPairLabel"></p><label>Nominal pembelian (Rp)</label><input id="entryAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="Contoh: 50000" required><label>Harga entry aktual per koin (Rp)</label><input id="entryPrice" type="number" min="0.00000001" step="any" inputmode="decimal" required><div class="split-preview"><div><span>Uang dingin tersedia</span><b id="entryAvailable">Rp0</b></div><div><span>Sisa setelah entry</span><b id="entryRemaining">Rp0</b></div></div><p class="tiny muted">Pastikan pembelian sudah kamu lakukan secara manual di Indodax. VAULT hanya mencatat transaksi dan memperbarui pembukuan.</p><button class="primary full" id="confirmEntry" value="default">Konfirmasi entry</button></form></dialog>
+<dialog id="editTransactionDialog"><form method="dialog" class="dialog-content"><div class="panel-head"><h3>Edit transaksi</h3><button class="x" value="cancel">×</button></div><label>Nama / kategori</label><input id="editTxTitle" maxlength="80"><label>Total pengeluaran (Rp)</label><input id="editTxAmount" type="number" min="1" inputmode="numeric"><label>Catatan</label><input id="editTxNote" maxlength="100"><button class="primary full" id="saveTxEdit" value="default">Simpan perubahan</button></form></dialog>
+<dialog id="ratioDialog"><form method="dialog" class="dialog-content"><div class="panel-head"><h3>Atur pembagian pemasukan</h3><button class="x" value="cancel">×</button></div><p class="muted">Total ketiga rasio harus tepat 100%.</p><label>Operasional (%)</label><input id="ratioOpsInput" type="number" min="0" max="100" value="60"><label>Dana darurat (%)</label><input id="ratioEmergencyInput" type="number" min="0" max="100" value="20"><label>Uang dingin (%)</label><input id="ratioColdInput" type="number" min="0" max="100" value="20"><button class="primary full" id="saveRatios" value="default">Simpan rasio</button></form></dialog>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" crossorigin="anonymous"></script>
+<script src="app.js"></script>
+</body></html>
