@@ -24,6 +24,11 @@
 <div class="legend"><span>● Operasional <b id="ratioOps">60%</b></span><span>● Darurat <b id="ratioEmergency">20%</b></span><span>● Uang dingin <b id="ratioCold">20%</b></span></div>
 </div>
 <div class="quick"><button class="primary" data-goto="income">＋ Catat pemasukan</button><button class="secondary" data-goto="expense">－ Catat pengeluaran</button></div>
+<div class="panel daily-budget-panel"><div class="panel-head"><div><p class="eyebrow">DAILY SPENDING CONTROL</p><h3>Budget Harian</h3></div><span class="local-pill">OPERASIONAL</span></div>
+<p class="muted">Tentukan berapa hari saldo operasional harus bertahan. VAULT menghitung ulang jatah harian saat transaksi berubah.</p>
+<div class="daily-config"><div><label for="dailyDays">Uang harus cukup untuk (hari)</label><input id="dailyDays" type="number" min="1" max="365" step="1" inputmode="numeric" placeholder="Contoh: 30"></div><button class="primary" id="saveDailyBudget">Terapkan</button></div>
+<div class="daily-metrics"><div><span>Jatah harian</span><b id="dailyAllowance">—</b></div><div><span>Terpakai hari ini</span><b id="dailySpent">Rp0</b></div><div><span>Sisa jatah hari ini</span><b id="dailyRemaining">—</b></div></div>
+<p class="tiny muted" id="dailyStatus" aria-live="polite">Masukkan jumlah hari untuk mulai mengatur budget harian.</p></div>
 <div class="panel"><div class="panel-head"><h3>Aktivitas terbaru</h3><button class="ghost" data-goto="history">Lihat semua</button></div><div id="recent" class="rows empty">Belum ada transaksi.</div></div>
 <p class="footnote">Catatan: saldo di aplikasi adalah pembukuan internal, bukan saldo rekening atau exchange.</p>
 </section>

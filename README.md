@@ -12,6 +12,11 @@
 - Data disimpan lokal di browser (localStorage).
 - Ekspor backup JSON dan hapus data.
 
+## Budget Harian
+- Pengguna menentukan berapa hari saldo operasional harus bertahan.
+- Jatah harian dihitung dari saldo operasional tersisa dan sisa hari dalam periode. Pengeluaran hari ini diperhitungkan agar tidak terpotong dua kali dari jatah hari ini.
+- VAULT menampilkan pengeluaran hari ini, sisa jatah, dan peringatan jika melewati jatah. Perubahan transaksi pengeluaran ikut memperbarui perhitungan.
+
 ## Scan struk (OCR)
 - Menggunakan Tesseract.js dengan bahasa Indonesia + Inggris.
 - File foto diproses di browser perangkat; aplikasi tidak mengunggah foto ke server VAULT.

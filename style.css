@@ -13,3 +13,5 @@
 #entryDialog input{width:100%;box-sizing:border-box}
 #entryDialog .split-preview{margin:16px 0}
 #portfolioRows .entry{align-items:center}
+
+.daily-budget-panel .daily-config{display:flex;align-items:end;gap:10px;margin:14px 0}.daily-budget-panel .daily-config>div{flex:1;min-width:0}.daily-budget-panel .daily-config button{min-height:44px}.daily-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:16px 0 10px}.daily-metrics>div{background:#0a1726;border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}.daily-metrics span{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.daily-metrics b{font-size:clamp(13px,3.3vw,18px);overflow-wrap:anywhere}.daily-budget-panel #dailyStatus{margin-bottom:0}@media(max-width:520px){.daily-metrics{gap:6px}.daily-metrics>div{padding:9px 7px}.daily-metrics span{font-size:10px}.daily-budget-panel .daily-config{align-items:stretch;flex-direction:column}}

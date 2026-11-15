@@ -1,5 +1,5 @@
 const KEY='vault_finance_v1';
-const defaults={ratios:{ops:60,emergency:20,cold:20},balances:{ops:0,emergency:0,cold:0},transactions:[]};
+const defaults={ratios:{ops:60,emergency:20,cold:20},balances:{ops:0,emergency:0,cold:0},transactions:[],dailyBudget:null};
 let state=load();
 function load(){try{return {...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return structuredClone(defaults)}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
@@ -16,10 +16,29 @@ function render(){
  if(el('scannerColdBalance'))el('scannerColdBalance').textContent=rupiah(b.cold);if(el('portfolioColdBalance'))el('portfolioColdBalance').textContent=rupiah(b.cold);renderPortfolio();
  el('ratioOps').textContent=r.ops+'%';el('ratioEmergency').textContent=r.emergency+'%';el('ratioCold').textContent=r.cold+'%';
  el('barOps').style.width=r.ops+'%';el('barEmergency').style.width=r.emergency+'%';el('barCold').style.width=r.cold+'%';
+ renderDailyBudget();
  el('recent').innerHTML=state.transactions.slice(0,4).map(txRow).join('')||'Belum ada transaksi.';
  el('historyRows').innerHTML=state.transactions.map(txRow).join('')||'Belum ada transaksi.';
  previewIncome();previewExpense();
 }
+function localDateKey(value=new Date()){const d=value instanceof Date?value:new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function dateOnlyUtc(key){const [y,m,d]=key.split('-').map(Number);return Date.UTC(y,m-1,d);}
+function renderDailyBudget(){
+ const plan=state.dailyBudget,daysInput=el('dailyDays');
+ if(!plan){el('dailyAllowance').textContent='—';el('dailySpent').textContent=rupiah(0);el('dailyRemaining').textContent='—';el('dailyStatus').textContent='Masukkan jumlah hari untuk mulai mengatur budget harian.';return;}
+ if(daysInput&&!daysInput.value)daysInput.value=plan.totalDays;
+ const today=localDateKey(),elapsed=Math.max(0,Math.floor((dateOnlyUtc(today)-dateOnlyUtc(plan.startDate))/86400000));
+ const daysLeft=Math.max(0,Number(plan.totalDays)-elapsed);
+ const spentToday=state.transactions.filter(t=>t.type==='expense'&&localDateKey(t.date)===today).reduce((sum,t)=>sum+(Number(t.amount)||0)+(Number(t.round)||0),0);
+ // Jatah hari ini memasukkan kembali pengeluaran hari ini agar tidak terhitung dua kali.
+ const allowance=daysLeft>0?Math.max(0,(Number(state.balances.ops)||0)+spentToday)/daysLeft:0;
+ const remaining=allowance-spentToday;
+ el('dailyAllowance').textContent=rupiah(allowance);el('dailySpent').textContent=rupiah(spentToday);el('dailyRemaining').textContent=rupiah(remaining);
+ if(daysLeft<=0)el('dailyStatus').textContent='Periode budget selesai. Atur ulang jumlah hari untuk memulai periode baru.';
+ else if(remaining<0)el('dailyStatus').textContent=`Pengeluaran hari ini melewati jatah sebesar ${rupiah(Math.abs(remaining))}. Jaga pengeluaran berikutnya agar saldo cukup sampai akhir periode.`;
+ else el('dailyStatus').textContent=`Sisa periode ${daysLeft} hari. Jatah harian dihitung dari saldo operasional dan pengeluaran hari ini.`;
+}
+el('saveDailyBudget').onclick=()=>{const days=Number(el('dailyDays').value);if(!Number.isInteger(days)||days<1||days>365)return toast('Masukkan jumlah hari 1–365.');state.dailyBudget={startDate:localDateKey(),totalDays:days};save();toast(`Budget harian diatur untuk ${days} hari.`);};
 function txRow(t){
  const idx=state.transactions.indexOf(t),isBuy=t.type==='buy',kind=t.type==='income'?'Pemasukan':isBuy?'Pembelian crypto · Entry':`Pengeluaran · ${esc(t.method==='scan'?'Scan struk':'Manual')}`;
  const items=Array.isArray(t.items)&&t.items.length?`<div class="saved-items"><b>Rincian barang</b>${t.items.map(i=>`<div><span>${esc(i.name)} (${Number(i.qty)||1} × ${rupiah(i.price)})</span><b>${rupiah((Number(i.qty)||1)*(Number(i.price)||0))}</b></div>`).join('')}</div>`:'';
