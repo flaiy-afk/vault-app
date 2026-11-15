@@ -16,19 +16,23 @@
 <div class="welcome"><div><p class="eyebrow">FINANCIAL OVERVIEW</p><h2>Keuanganmu, <span>terkendali.</span></h2><p class="muted">Catat uang masuk dan keluar. Saldo dihitung dari catatan aplikasi.</p></div><div class="date" id="today"></div></div>
 <div class="cards">
 <article class="metric"><span>Total dana tercatat</span><strong id="totalBalance">Rp0</strong><small>Operasional + darurat + uang dingin</small></article>
+<article class="metric"><span>Operasional</span><strong id="opsBalance">Rp0</strong><small>Saldo untuk kebutuhan harian</small></article>
 <article class="metric"><span>Uang dingin</span><strong id="coldBalance">Rp0</strong><small>Alokasi investasi (catatan manual)</small></article>
 <article class="metric"><span>Dana darurat</span><strong id="emergencyBalance">Rp0</strong><small>Cadangan keuangan</small></article>
 </div>
+<div class="panel form-panel" id="dailyBudgetPanel">
+ <div class="panel-head"><div><p class="eyebrow">DAILY CONTROL</p><h3>Budget harian</h3></div><span class="tag" id="budgetStatus">Belum diatur</span></div>
+ <label>Uang operasional harus bertahan berapa hari?</label>
+ <div class="two"><input id="budgetDays" type="number" min="1" max="365" value="30" inputmode="numeric"><button class="primary" id="saveBudgetDays" type="button">Atur durasi</button></div>
+ <div class="split-preview"><div><span>Saran batas hari ini</span><b id="dailyLimit">Rp0</b></div><div><span>Sudah dipakai hari ini</span><b id="spentToday">Rp0</b></div><div><span>Sisa jatah hari ini</span><b id="dailyRemaining">Rp0</b></div></div>
+ <p class="tiny muted" id="budgetNote">Atur durasi agar VAULT menghitung batas pengeluaran harian.</p>
+</div>
 <div class="panel"><div class="panel-head"><div><p class="eyebrow">ALLOCATION</p><h3>Komposisi dana</h3></div><button class="ghost" id="editRatio">Atur rasio</button></div>
 <div class="bar"><i id="barOps"></i><i id="barEmergency"></i><i id="barCold"></i></div>
+<p class="tiny muted">Rasio ini berlaku untuk pemasukan berikutnya; saldo yang sudah tercatat tidak dibagi ulang otomatis.</p>
 <div class="legend"><span>● Operasional <b id="ratioOps">60%</b></span><span>● Darurat <b id="ratioEmergency">20%</b></span><span>● Uang dingin <b id="ratioCold">20%</b></span></div>
 </div>
 <div class="quick"><button class="primary" data-goto="income">＋ Catat pemasukan</button><button class="secondary" data-goto="expense">－ Catat pengeluaran</button></div>
-<div class="panel daily-budget-panel"><div class="panel-head"><div><p class="eyebrow">DAILY SPENDING CONTROL</p><h3>Budget Harian</h3></div><span class="local-pill">OPERASIONAL</span></div>
-<p class="muted">Tentukan berapa hari saldo operasional harus bertahan. VAULT menghitung ulang jatah harian saat transaksi berubah.</p>
-<div class="daily-config"><div><label for="dailyDays">Uang harus cukup untuk (hari)</label><input id="dailyDays" type="number" min="1" max="365" step="1" inputmode="numeric" placeholder="Contoh: 30"></div><button class="primary" id="saveDailyBudget">Terapkan</button></div>
-<div class="daily-metrics"><div><span>Jatah harian</span><b id="dailyAllowance">—</b></div><div><span>Terpakai hari ini</span><b id="dailySpent">Rp0</b></div><div><span>Sisa jatah hari ini</span><b id="dailyRemaining">—</b></div></div>
-<p class="tiny muted" id="dailyStatus" aria-live="polite">Masukkan jumlah hari untuk mulai mengatur budget harian.</p></div>
 <div class="panel"><div class="panel-head"><h3>Aktivitas terbaru</h3><button class="ghost" data-goto="history">Lihat semua</button></div><div id="recent" class="rows empty">Belum ada transaksi.</div></div>
 <p class="footnote">Catatan: saldo di aplikasi adalah pembukuan internal, bukan saldo rekening atau exchange.</p>
 </section>
@@ -76,9 +80,9 @@
 <div class="section-title"><p class="eyebrow">MARKET INTELLIGENCE</p><h2>On-demand screener</h2><p class="muted">Mode Balanced: RSI + Support + Volume + EMA20. Analisis hanya berjalan saat tombol ditekan; tanpa API key dan tanpa eksekusi order.</p></div>
 <div class="panel form-panel">
 <label for="pairSymbol">Cari pair Indodax</label><input id="pairSymbol" type="text" autocapitalize="characters" spellcheck="false" placeholder="Contoh: BTCIDR" value="BTCIDR">
-<div class="two"><div><label>Timeframe</label><select id="timeframe"><option value="1h" selected>1 Jam</option><option value="4h">4 Jam</option><option value="15m">15 Menit</option><option value="1d">1 Hari</option></select></div><div><label>Batas RSI</label><input id="rsiLimit" type="number" min="10" max="50" value="35"></div></div>
+<div><label>Batas RSI</label><input id="rsiLimit" type="number" min="10" max="50" value="35"></div>
 <div class="balance-hint">Uang dingin tersedia <b id="scannerColdBalance">Rp0</b></div>
-<button class="primary full" id="runScreener">⚡ Analisis pair</button><p class="tiny muted" id="apiStatus">Belum ada analisis.</p>
+<p class="tiny muted">Analisis otomatis 15M, 1H, 4H, dan 1D dalam satu kali proses.</p><button class="primary full" id="runScreener">⚡ Analisis Multi-Timeframe</button><p class="tiny muted" id="apiStatus">Belum ada analisis.</p>
 </div>
 <div id="screenResults" class="results"></div>
 <div class="footnote">Masukkan satu pair IDR, misalnya BTCIDR atau ETHIDR. VAULT hanya menganalisis pair yang kamu pilih.</div>

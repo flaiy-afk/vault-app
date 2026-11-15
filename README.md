@@ -12,11 +12,6 @@
 - Data disimpan lokal di browser (localStorage).
 - Ekspor backup JSON dan hapus data.
 
-## Budget Harian
-- Pengguna menentukan berapa hari saldo operasional harus bertahan.
-- Jatah harian dihitung dari saldo operasional tersisa dan sisa hari dalam periode. Pengeluaran hari ini diperhitungkan agar tidak terpotong dua kali dari jatah hari ini.
-- VAULT menampilkan pengeluaran hari ini, sisa jatah, dan peringatan jika melewati jatah. Perubahan transaksi pengeluaran ikut memperbarui perhitungan.
-
 ## Scan struk (OCR)
 - Menggunakan Tesseract.js dengan bahasa Indonesia + Inggris.
 - File foto diproses di browser perangkat; aplikasi tidak mengunggah foto ke server VAULT.
@@ -53,3 +48,16 @@
 - Public API menyediakan data pasar tanpa autentikasi. Dokumentasi Indodax mencantumkan OHLC melalui `tradingview/history_v2`; cek pasangan dan data yang tersedia di exchange.
 - Browser dapat membatasi request lintas-origin (CORS), dan API dapat menerapkan rate limit. Jika akses langsung dari browser ditolak, diperlukan proxy/backend; jangan memasukkan API Secret ke frontend.
 - Skor adalah sistem ranking heuristik, **bukan probabilitas profit atau sinyal pasti**. Support sederhana, RSI, volume, dan EMA harus diperiksa manual bersama spread, likuiditas, volatilitas, dan kondisi pasar.
+
+## VAULT v4 — Budget Harian & Multi-Timeframe
+
+Pembaruan ini menambahkan:
+- Kartu saldo Operasional pada dashboard agar saldo yang bisa dipakai terlihat langsung.
+- Budget Harian: atur jumlah hari, lihat saran batas harian, pengeluaran hari ini, dan sisa jatah. Batas harian dihitung ulang dari saldo Operasional saat ini dibagi sisa hari dalam periode.
+- Screener Multi-Timeframe: satu pair dianalisis pada 15M, 1H, 4H, dan 1D menggunakan rumus Balanced yang sama pada masing-masing timeframe.
+- Syarat konfirmasi untuk menampilkan tombol pertimbangan entry: 15M >= 45, 1H >= 70, dan 4H >= 70. Timeframe 1D hanya konteks tren, bukan syarat wajib.
+- Versi cache service worker dinaikkan agar perangkat mengambil file aplikasi yang baru.
+
+Catatan saldo: mengubah rasio hanya memengaruhi pemasukan berikutnya. VAULT tidak membagi ulang saldo historis secara otomatis. Data keuangan tetap menggunakan localStorage dengan key `vault_finance_v1`.
+
+Tidak ada order otomatis. Entry tetap dicatat manual dan tetap ditolak jika nominal melebihi saldo Uang Dingin.

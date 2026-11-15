@@ -1,7 +1,7 @@
 const KEY='vault_finance_v1';
-const defaults={ratios:{ops:60,emergency:20,cold:20},balances:{ops:0,emergency:0,cold:0},transactions:[],dailyBudget:null};
+const defaults={ratios:{ops:60,emergency:20,cold:20},balances:{ops:0,emergency:0,cold:0},transactions:[],budget:{days:30,startDate:null}};
 let state=load();
-function load(){try{return {...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return structuredClone(defaults)}}
+function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return {...defaults,...saved,ratios:{...defaults.ratios,...(saved.ratios||{})},balances:{...defaults.balances,...(saved.balances||{})},budget:{...defaults.budget,...(saved.budget||{})},transactions:Array.isArray(saved.transactions)?saved.transactions:[]}}catch{return structuredClone(defaults)}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
 const rupiah=n=>'Rp'+Math.round(Number(n)||0).toLocaleString('id-ID');
 const el=id=>document.getElementById(id);
@@ -12,33 +12,31 @@ document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.g
 el('today').textContent=new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 function render(){
  const b=state.balances,r=state.ratios,total=b.ops+b.emergency+b.cold;
- el('totalBalance').textContent=rupiah(total);el('coldBalance').textContent=rupiah(b.cold);el('emergencyBalance').textContent=rupiah(b.emergency);
+ el('totalBalance').textContent=rupiah(total);if(el('opsBalance'))el('opsBalance').textContent=rupiah(b.ops);el('coldBalance').textContent=rupiah(b.cold);el('emergencyBalance').textContent=rupiah(b.emergency);
  if(el('scannerColdBalance'))el('scannerColdBalance').textContent=rupiah(b.cold);if(el('portfolioColdBalance'))el('portfolioColdBalance').textContent=rupiah(b.cold);renderPortfolio();
  el('ratioOps').textContent=r.ops+'%';el('ratioEmergency').textContent=r.emergency+'%';el('ratioCold').textContent=r.cold+'%';
  el('barOps').style.width=r.ops+'%';el('barEmergency').style.width=r.emergency+'%';el('barCold').style.width=r.cold+'%';
- renderDailyBudget();
  el('recent').innerHTML=state.transactions.slice(0,4).map(txRow).join('')||'Belum ada transaksi.';
  el('historyRows').innerHTML=state.transactions.map(txRow).join('')||'Belum ada transaksi.';
- previewIncome();previewExpense();
+ previewIncome();previewExpense();renderDailyBudget();
 }
-function localDateKey(value=new Date()){const d=value instanceof Date?value:new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function dateOnlyUtc(key){const [y,m,d]=key.split('-').map(Number);return Date.UTC(y,m-1,d);}
+function localDay(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function renderDailyBudget(){
- const plan=state.dailyBudget,daysInput=el('dailyDays');
- if(!plan){el('dailyAllowance').textContent='—';el('dailySpent').textContent=rupiah(0);el('dailyRemaining').textContent='—';el('dailyStatus').textContent='Masukkan jumlah hari untuk mulai mengatur budget harian.';return;}
- if(daysInput&&!daysInput.value)daysInput.value=plan.totalDays;
- const today=localDateKey(),elapsed=Math.max(0,Math.floor((dateOnlyUtc(today)-dateOnlyUtc(plan.startDate))/86400000));
- const daysLeft=Math.max(0,Number(plan.totalDays)-elapsed);
- const spentToday=state.transactions.filter(t=>t.type==='expense'&&localDateKey(t.date)===today).reduce((sum,t)=>sum+(Number(t.amount)||0)+(Number(t.round)||0),0);
- // Jatah hari ini memasukkan kembali pengeluaran hari ini agar tidak terhitung dua kali.
- const allowance=daysLeft>0?Math.max(0,(Number(state.balances.ops)||0)+spentToday)/daysLeft:0;
- const remaining=allowance-spentToday;
- el('dailyAllowance').textContent=rupiah(allowance);el('dailySpent').textContent=rupiah(spentToday);el('dailyRemaining').textContent=rupiah(remaining);
- if(daysLeft<=0)el('dailyStatus').textContent='Periode budget selesai. Atur ulang jumlah hari untuk memulai periode baru.';
- else if(remaining<0)el('dailyStatus').textContent=`Pengeluaran hari ini melewati jatah sebesar ${rupiah(Math.abs(remaining))}. Jaga pengeluaran berikutnya agar saldo cukup sampai akhir periode.`;
- else el('dailyStatus').textContent=`Sisa periode ${daysLeft} hari. Jatah harian dihitung dari saldo operasional dan pengeluaran hari ini.`;
+ const budget=state.budget||{days:30,startDate:null};
+ if(el('budgetDays'))el('budgetDays').value=budget.days||30;
+ const today=localDay(),start=budget.startDate?new Date(`${budget.startDate}T00:00:00`):null;
+ const elapsed=start?Math.floor((new Date(`${today}T00:00:00`)-start)/86400000):0;
+ const remainingDays=budget.startDate?Math.max(0,(Number(budget.days)||30)-elapsed):0;
+ const spent=state.transactions.filter(t=>t.type==='expense'&&localDay(new Date(t.date))===today).reduce((sum,t)=>sum+(Number(t.amount)||0),0);
+ const limit=remainingDays>0?state.balances.ops/remainingDays:0,remaining=limit-spent;
+ if(el('dailyLimit'))el('dailyLimit').textContent=rupiah(limit);
+ if(el('spentToday'))el('spentToday').textContent=rupiah(spent);
+ if(el('dailyRemaining'))el('dailyRemaining').textContent=rupiah(remaining);
+ if(el('budgetStatus')){el('budgetStatus').textContent=!budget.startDate?'Belum diatur':remainingDays===0?'Periode selesai':remaining<0?'Melebihi batas':'Aktif';el('budgetStatus').className='tag '+(remaining<0?'bad':remainingDays===0?'warn':'')}
+ if(el('budgetNote'))el('budgetNote').textContent=!budget.startDate?'Atur durasi untuk memulai perhitungan.':remainingDays===0?'Periode budget selesai. Atur durasi baru untuk memulai periode berikutnya.':`Sisa periode ${remainingDays} hari. Batas harian dihitung ulang dari saldo operasional saat ini dibagi sisa hari.`;
 }
-el('saveDailyBudget').onclick=()=>{const days=Number(el('dailyDays').value);if(!Number.isInteger(days)||days<1||days>365)return toast('Masukkan jumlah hari 1–365.');state.dailyBudget={startDate:localDateKey(),totalDays:days};save();toast(`Budget harian diatur untuk ${days} hari.`);};
+if(el('saveBudgetDays'))el('saveBudgetDays').onclick=()=>{const days=Number(el('budgetDays').value);if(!Number.isInteger(days)||days<1||days>365)return toast('Masukkan durasi 1 sampai 365 hari.');state.budget={days,startDate:localDay()};save();toast(`Budget harian diatur untuk ${days} hari.`)};
+
 function txRow(t){
  const idx=state.transactions.indexOf(t),isBuy=t.type==='buy',kind=t.type==='income'?'Pemasukan':isBuy?'Pembelian crypto · Entry':`Pengeluaran · ${esc(t.method==='scan'?'Scan struk':'Manual')}`;
  const items=Array.isArray(t.items)&&t.items.length?`<div class="saved-items"><b>Rincian barang</b>${t.items.map(i=>`<div><span>${esc(i.name)} (${Number(i.qty)||1} × ${rupiah(i.price)})</span><b>${rupiah((Number(i.qty)||1)*(Number(i.price)||0))}</b></div>`).join('')}</div>`:'';
@@ -180,27 +178,31 @@ function analyze(rows,limit){
  if(trendUp)score+=10;if(closes.length>=2&&last>closes.at(-2))score+=10;
  return {last,rsi:r,support,distance,volumeRatio,trendUp,score,ema20};
 }
-function renderAnalysisResult(x,interval){
- const status=x.score>=70?'Setup menarik':x.score>=45?'Pantau':'Belum ideal';
- const cls=x.score>=70?'':x.score>=45?'warn':'bad';
- return `<article class="result"><div class="result-top"><div><div class="coin">${esc(x.symbol)}</div><div class="price">${rupiah(x.last)}</div></div><span class="tag ${cls}">${status} · ${x.score}/100</span></div><div class="stats"><div><small>RSI (14)</small><b>${x.rsi===null?'N/A':x.rsi.toFixed(1)}</b></div><div><small>Support 30 candle</small><b>${rupiah(x.support)}</b></div><div><small>Jarak support</small><b>${x.distance.toFixed(2)}%</b></div></div><div class="stats"><div><small>Volume vs rata-rata</small><b>${x.volumeRatio.toFixed(2)}x</b></div><div><small>Konfirmasi EMA20</small><b>${x.trendUp?'Di atas':'Di bawah'}</b></div><div><small>Harga analisis</small><b>${rupiah(x.last)}</b></div></div><div class="tiny muted">Timeframe ${interval} · Skor Balanced adalah indikator bantu, bukan kepastian harga akan naik.</div><button class="primary full entry-open" data-entry-symbol="${esc(x.symbol)}" data-entry-price="${x.last}">＋ Mau Entry ${esc(x.symbol)}</button></article>`;
+function renderMultiAnalysis(symbol,results){
+ const byTf=Object.fromEntries(results.map(x=>[x.interval,x]));
+ const pass15=byTf['15m'].score>=45,pass1h=byTf['1h'].score>=70,pass4h=byTf['4h'].score>=70;
+ const confirmed=pass15&&pass1h&&pass4h;
+ const rows=results.map(x=>{const label=x.score>=70?'Setup menarik':x.score>=45?'Pantau':'Belum ideal';const cls=x.score>=70?'':x.score>=45?'warn':'bad';return `<div class="entry"><div><b>${x.interval.toUpperCase()} · ${label}</b><small>RSI ${x.rsi===null?'N/A':x.rsi.toFixed(1)} · ${x.trendUp?'Di atas EMA20':'Di bawah EMA20'} · Volume ${x.volumeRatio.toFixed(2)}x</small></div><span class="tag ${cls}">${x.score}/100</span></div>`}).join('');
+ const context=byTf['1d'].score>=70?'Tren harian mendukung.':byTf['1d'].score>=45?'Tren harian netral / perlu perhatian.':'Tren harian lemah; risiko berlawanan tren lebih besar.';
+ const decision=confirmed?`<div class="tag">Kriteria timeframe terpenuhi</div><p class="tiny">15M ≥ 45, 1H ≥ 70, dan 4H ≥ 70. 1D digunakan sebagai konteks, bukan syarat mutlak.</p><button class="primary full entry-open" data-entry-symbol="${esc(symbol)}" data-entry-price="${byTf['1h'].last}">＋ Pertimbangkan Entry ${esc(symbol)}</button>`:`<div class="tag bad">TUNGGU KONFIRMASI</div><p class="tiny">Syarat belum terpenuhi: 15M ≥ 45 (${byTf['15m'].score}), 1H ≥ 70 (${byTf['1h'].score}), 4H ≥ 70 (${byTf['4h'].score}). Tombol entry belum tersedia.</p>`;
+ return `<article class="result"><div class="result-top"><div><div class="coin">${esc(symbol)}</div><div class="price">Harga acuan 1H: ${rupiah(byTf['1h'].last)}</div></div><span class="tag ${confirmed?'':'bad'}">${confirmed?'Setup terkonfirmasi':'Belum terkonfirmasi'}</span></div>${rows}<p class="tiny muted">Konteks 1D: ${context}</p><div class="tiny muted">Aturan konfirmasi VAULT: 15M minimal 45, 1H minimal 70, 4H minimal 70. Skor Balanced tiap timeframe tetap menggunakan bobot yang sama.</div>${decision}</article>`;
 }
 el('runScreener').onclick=async()=>{
- const btn=el('runScreener'),symbol=el('pairSymbol').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),interval=el('timeframe').value,limit=+el('rsiLimit').value;
+ const btn=el('runScreener'),symbol=el('pairSymbol').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),limit=+el('rsiLimit').value;
  if(!symbol)return toast('Masukkan pair terlebih dahulu, contoh BTCIDR.');
  if(!symbol.endsWith('IDR')||symbol.length<=3)return toast('Gunakan pair IDR, contoh BTCIDR atau ETHIDR.');
- btn.disabled=true;btn.textContent='Menganalisis pair...';el('apiStatus').textContent=`Mengambil data candle ${symbol} dari Indodax...`;el('screenResults').innerHTML='';
+ btn.disabled=true;btn.textContent='Menganalisis 4 timeframe...';el('apiStatus').textContent=`Mengambil candle ${symbol} untuk 15M, 1H, 4H, dan 1D...`;el('screenResults').innerHTML='';
  try{
-  const rows=await fetchKlines(symbol,interval);
-  const result={symbol,...analyze(rows,limit)};
-  el('screenResults').innerHTML=renderAnalysisResult(result,interval);
-  el('apiStatus').textContent=`Analisis ${symbol} selesai · ${new Date().toLocaleTimeString('id-ID')}.`;
- }catch(e){el('apiStatus').textContent=e.message;el('screenResults').innerHTML=`<div class="panel empty">${esc(e.message)}. Periksa pair dan coba lagi.</div>`;}
- finally{btn.disabled=false;btn.textContent='⚡ Analisis pair';}
+  const intervals=['15m','1h','4h','1d'];
+  const results=await Promise.all(intervals.map(async interval=>{const rows=await fetchKlines(symbol,interval);return {interval,...analyze(rows,limit)}}));
+  el('screenResults').innerHTML=renderMultiAnalysis(symbol,results);
+  el('apiStatus').textContent=`Analisis multi-timeframe ${symbol} selesai · ${new Date().toLocaleTimeString('id-ID')}.`;
+ }catch(e){el('apiStatus').textContent=e.message;el('screenResults').innerHTML=`<div class="panel empty">Analisis belum lengkap: ${esc(e.message)}. Coba lagi setelah koneksi stabil.</div>`;}
+ finally{btn.disabled=false;btn.textContent='⚡ Analisis Multi-Timeframe';}
 };
 function renderPortfolio(){const host=el('portfolioRows');if(!host)return;const buys=state.transactions.filter(t=>t.type==='buy'&&t.status!=='closed');host.classList.toggle('empty',!buys.length);host.innerHTML=buys.map(t=>`<div class="entry"><div><b>${esc(t.symbol)}</b><small>${new Date(t.date).toLocaleString('id-ID')} · Entry ${rupiah(t.entryPrice)} · ${Number(t.quantity||0).toLocaleString('id-ID',{maximumFractionDigits:8})} koin</small></div><div class="negative">−${rupiah(t.amount)}</div></div>`).join('')||'Belum ada posisi aktif.';}
-let selectedEntry={symbol:'',price:0};
-document.addEventListener('click',e=>{const btn=e.target.closest('[data-entry-symbol]');if(!btn)return;selectedEntry={symbol:btn.dataset.entrySymbol,price:Number(btn.dataset.entryPrice)||0};el('entryTitle').textContent=`Entry ${selectedEntry.symbol}`;el('entryPairLabel').textContent=`Harga analisis terakhir: ${rupiah(selectedEntry.price)}. Masukkan harga beli aktualmu.`;el('entryAmount').value='';el('entryPrice').value=selectedEntry.price||'';el('entryAvailable').textContent=rupiah(state.balances.cold);el('entryRemaining').textContent=rupiah(state.balances.cold);el('entryDialog').showModal();});
+let selectedEntry={symbol:'',price:0,scores:{}};
+document.addEventListener('click',e=>{const btn=e.target.closest('[data-entry-symbol]');if(!btn)return;selectedEntry={symbol:btn.dataset.entrySymbol,price:Number(btn.dataset.entryPrice)||0,scores:{}};el('entryTitle').textContent=`Entry ${selectedEntry.symbol}`;el('entryPairLabel').textContent=`Harga analisis terakhir: ${rupiah(selectedEntry.price)}. Masukkan harga beli aktualmu.`;el('entryAmount').value='';el('entryPrice').value=selectedEntry.price||'';el('entryAvailable').textContent=rupiah(state.balances.cold);el('entryRemaining').textContent=rupiah(state.balances.cold);el('entryDialog').showModal();});
 function previewEntry(){const amount=Math.max(0,+el('entryAmount').value||0);el('entryAvailable').textContent=rupiah(state.balances.cold);el('entryRemaining').textContent=rupiah(state.balances.cold-amount)}
 el('entryAmount').oninput=previewEntry;
 el('confirmEntry').onclick=e=>{
@@ -209,7 +211,7 @@ el('confirmEntry').onclick=e=>{
  // Pemeriksaan ulang tepat saat konfirmasi untuk mencegah saldo Uang Dingin minus.
  if(amount>state.balances.cold)return toast(`Entry ditolak. Uang dingin hanya ${rupiah(state.balances.cold)}.`);
  const quantity=amount/price;state.balances.cold-=amount;
- state.transactions.unshift({type:'buy',title:`Entry ${selectedEntry.symbol}`,symbol:selectedEntry.symbol,amount,entryPrice:price,quantity,status:'active',date:new Date().toISOString(),detail:'Pembelian dicatat manual; tidak ada order otomatis.'});
+ state.transactions.unshift({type:'buy',title:`Entry ${selectedEntry.symbol}`,symbol:selectedEntry.symbol,amount,entryPrice:price,quantity,status:'active',date:new Date().toISOString(),timeframeConfirmation:'15M>=45, 1H>=70, 4H>=70',detail:'Pembelian dicatat manual setelah konfirmasi multi-timeframe; tidak ada order otomatis.'});
  el('entryDialog').close();save();toast(`Entry ${selectedEntry.symbol} tersimpan. Uang dingin berkurang ${rupiah(amount)}.`);go('portfolio');
 };
 render();
