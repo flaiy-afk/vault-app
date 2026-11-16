@@ -61,3 +61,11 @@ Pembaruan ini menambahkan:
 Catatan saldo: mengubah rasio hanya memengaruhi pemasukan berikutnya. VAULT tidak membagi ulang saldo historis secara otomatis. Data keuangan tetap menggunakan localStorage dengan key `vault_finance_v1`.
 
 Tidak ada order otomatis. Entry tetap dicatat manual dan tetap ditolak jika nominal melebihi saldo Uang Dingin.
+
+
+## VAULT v6 — Perbaikan penyimpanan saldo
+- Menulis data ke penyimpanan utama dan salinan cadangan lokal (`vault_finance_backup_v1`).
+- Saat aplikasi dibuka, jika saldo utama kosong tetapi backup berisi saldo, VAULT memulihkan backup.
+- Jika saldo kosong tetapi riwayat transaksi masih ada, saldo dihitung ulang dari ledger pemasukan, pengeluaran, round-up, dan entry.
+- Penyimpanan dicoba kembali saat aplikasi masuk ke background atau ditutup.
+- Key data utama `vault_finance_v1` tetap dipertahankan agar data lama tidak sengaja dipisahkan.

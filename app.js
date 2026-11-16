@@ -1,8 +1,37 @@
 const KEY='vault_finance_v1';
+const BACKUP_KEY='vault_finance_backup_v1';
 const defaults={ratios:{ops:60,emergency:20,cold:20},balances:{ops:0,emergency:0,cold:0},transactions:[],budget:{days:30,startDate:null}};
+function normalizeState(saved){return {...defaults,...saved,ratios:{...defaults.ratios,...(saved.ratios||{})},balances:{...defaults.balances,...(saved.balances||{})},budget:{...defaults.budget,...(saved.budget||{})},transactions:Array.isArray(saved.transactions)?saved.transactions:[]}}
+function parseStored(key){try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):null}catch{return null}}
+function balancesAreZero(b){return ['ops','emergency','cold'].every(k=>(Number(b?.[k])||0)===0)}
+function rebuildBalancesFromLedger(transactions){const b={ops:0,emergency:0,cold:0};
+ for(const t of [...(transactions||[])].reverse()){
+  if(t.type==='income'){const sp=t.split||{};b.ops+=Number(sp.ops)||0;b.emergency+=Number(sp.emergency)||0;b.cold+=Number(sp.cold)||0;}
+  else if(t.type==='expense'){const amount=Number(t.amount)||0,round=Number(t.round)||0;b.ops-=amount+round;b.cold+=round;}
+  else if(t.type==='buy'){b.cold-=Number(t.amount)||0;}
+ }
+ return b;
+}
+function load(){
+ const primary=parseStored(KEY),backup=parseStored(BACKUP_KEY);
+ let saved=primary||backup||{};
+ // If the main record was reset but the safety copy still has balances, restore the copy.
+ if(primary&&backup&&balancesAreZero(primary.balances)&&!balancesAreZero(backup.balances))saved=backup;
+ let loaded=normalizeState(saved);
+ // Last-resort recovery: rebuild balances from the retained transaction ledger, never deleting history.
+ if(balancesAreZero(loaded.balances)&&loaded.transactions.length){const recovered=rebuildBalancesFromLedger(loaded.transactions);if(!balancesAreZero(recovered))loaded.balances=recovered;}
+ return loaded;
+}
 let state=load();
-function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return {...defaults,...saved,ratios:{...defaults.ratios,...(saved.ratios||{})},balances:{...defaults.balances,...(saved.balances||{})},budget:{...defaults.budget,...(saved.budget||{})},transactions:Array.isArray(saved.transactions)?saved.transactions:[]}}catch{return structuredClone(defaults)}}
-function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
+function save(){
+ const payload=JSON.stringify(state);
+ try{localStorage.setItem(BACKUP_KEY,payload);localStorage.setItem(KEY,payload);render();}
+ catch(err){console.error('VAULT storage save failed:',err);toast('Penyimpanan gagal. Segera ekspor backup data VAULT.');}
+}
+// Persist the latest in-memory state when the app is backgrounded or closed.
+function persistOnExit(){try{const payload=JSON.stringify(state);localStorage.setItem(BACKUP_KEY,payload);localStorage.setItem(KEY,payload);}catch(err){console.error('VAULT exit persistence failed:',err)}}
+window.addEventListener('pagehide',persistOnExit);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistOnExit()});
 const rupiah=n=>'Rp'+Math.round(Number(n)||0).toLocaleString('id-ID');
 const el=id=>document.getElementById(id);
 function toast(s){const t=el('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
